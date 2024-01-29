@@ -1,0 +1,118 @@
+--First create database and call it 'VhclAcc'
+--Import the CSV files to this database as tables.
+--------------------------------------------------------------------
+--Question 1: How many accidents have occured in urban areas versus rural areas?
+SELECT 
+	[Area],
+	COUNT([AccidentIndex]) AS 'Total Accident'
+FROM 
+	[dbo].[accident]
+GROUP BY [Area]
+
+--Question 2: Which day of the week has the highest number of accidents?
+SELECT
+	[Day],
+	COUNT([AccidentIndex]) AS 'Total Accidents'
+FROM 
+	[dbo].[accident]
+GROUP BY
+	[Day] 
+ORDER BY 
+	'Total Accidents' DESC
+
+--Question 3: What is the average age of vechicles involved in accidents based on their type?
+
+SELECT
+[VehicleType],
+COUNT([AccidentIndex]) AS 'Total Accidents',
+AVG([AgeVehicle]) AS 'Average Year'
+FROM 
+	[dbo].[vehicle]
+WHERE
+	[AgeVehicle] IS not NULL
+GROUP BY
+	[VehicleType]
+ORDER BY
+	'Total Accidents' DESC
+
+--Question 4: Can we identify any trends in accidents based on the age of vechicles involved?
+SELECT
+	AgeGroup,
+	COUNT([AccidentIndex]) AS 'Total Accidents',
+	AVG([AgeVehicle]) AS 'Average year'
+FROM (
+	SELECT
+		[AccidentIndex],
+		[AgeVehicle],
+		CASE
+			WHEN [AgeVehicle] BETWEEN 0 AND 5 THEN 'New'
+			WHEN [AgeVehicle] BETWEEN 6 AND 10 THEN 'Regular'
+			ELSE 'Old'
+		END AS 'AgeGroup'
+	FROM [dbo].[vehicle]
+)AS SubQuery
+GROUP BY
+	AgeGroup
+
+--Question 5: Are there any specific weather conditions that contribute to severe accidents?
+DECLARE @Severity varchar(100)
+SET @Severity = 'Serious'
+SELECT 
+	[WeatherConditions], 
+	COUNT([Severity]) AS 'Total Accidents'
+FROM 
+	[dbo].[accident]
+WHERE
+	[Severity] = @Severity
+GROUP BY 
+	[WeatherConditions]
+ORDER BY
+	'Total Accidents' DESC
+
+--Question 6: Do accidents often involve impacts on the left-hand side of the veichle?
+SELECT
+	[LeftHand],
+	COUNT([AccidentIndex]) As 'Total Accidents'
+FROM
+	[dbo].[vehicle]
+GROUP BY
+	[LeftHand]
+HAVING
+	[LeftHand] IS NOT NULL
+
+--Question 7: Are there any relationships between journey purposes and the severity of accidents?
+
+SELECT
+	V.[JourneyPurpose],
+	COUNT(A.[Severity]) AS 'Total Accidents',
+	CASE
+		WHEN COUNT(A.[Severity]) BETWEEN 0 And 1000 THEN 'Low'
+		WHEN COUNT(A.[Severity]) BETWEEN 1001 And 3000 THEN 'Moderate'
+		ELSE 'High'
+	END AS 'Level'
+FROM
+	[dbo].[accident] A
+JOIN
+	[dbo].[vehicle] V ON V.[AccidentIndex] = A.[AccidentIndex]
+GROUP BY 
+	V.[JourneyPurpose]
+ORDER BY 
+'Total Accidents'DESC
+
+--Question 8: Calculate the average age of vechicles involved in accidents, considering Day light and point of impact:
+DECLARE @Impact varchar(100)
+DECLARE @Light varchar(100)
+SET @Impact = 'Nearside'
+SET @Light ='Daylight'
+SELECT
+	A.[LightConditions],
+	V.[PointImpact],
+	AVG(V.[AgeVehicle]) AS 'Average Year'
+FROM 
+	[dbo].[accident]A 
+JOIN
+	[dbo].[vehicle]V ON V.[AccidentIndex] = A.[AccidentIndex]
+GROUP BY
+	A.[LightConditions], V.[PointImpact]
+HAVING
+	[PointImpact] = @Impact AND [LightConditions] = @Light
